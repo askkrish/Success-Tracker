@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Finequs · Team Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F5F1; --surface:#FFFFFF; --ink:#1C2421; --muted:#6E746F;
+    --green:#1F4D3A; --green-deep:#163A2C; --green-tint:#E7F0EB;
+    --amber:#B45309; --amber-tint:#FDF0E0;
+    --line:#E3E1D9; --line-strong:#CFCDC3; --danger:#9B2C2C;
+    --radius:8px; --shadow:0 1px 2px rgba(28,36,33,.06), 0 8px 24px rgba(28,36,33,.08);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Inter',system-ui,sans-serif; font-size:14px; color:var(--ink); background:var(--paper); -webkit-font-smoothing:antialiased;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{font:inherit; cursor:pointer;}
+  input,select,textarea{font:inherit; color:var(--ink); width:100%; padding:8px 10px; border:1px solid var(--line-strong); border-radius:6px; background:#fff;}
+  input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--green); outline-offset:1px;}
+  label{display:block; font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px;}
+  .btn{display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:6px; border:1px solid transparent; font-weight:600; font-size:13px; background:var(--green); color:#fff; transition:background .15s;}
+  .btn:hover{background:var(--green-deep);}
+  .btn.secondary{background:#fff; color:var(--ink); border-color:var(--line-strong);}
+  .btn.secondary:hover{background:var(--green-tint);}
+  .btn.danger{background:#fff; color:var(--danger); border-color:var(--danger);}
+  .btn.danger:hover{background:#FBEAEA;}
+  .btn.small{padding:5px 10px; font-size:12px;}
+  .btn:disabled{opacity:.5; cursor:not-allowed;}
+
+  #loginView{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+  .login-card{width:100%; max-width:380px; background:var(--surface); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--line);}
+  .login-head{background:var(--green); color:#fff; padding:28px 28px 22px; border-bottom:3px solid var(--green-deep);}
+  .wordmark{font-family:'Fraunces',serif; font-weight:700; font-size:24px;}
+  .wordmark small{display:block; font-family:'Inter'; font-weight:500; font-size:12px; opacity:.75; letter-spacing:.14em; text-transform:uppercase; margin-top:6px;}
+  .login-body{padding:26px 28px 30px;}
+  .login-body .field{margin-bottom:16px;}
+  .login-err{color:var(--danger); font-size:13px; margin-top:12px; min-height:18px;}
+
+  #appView{display:none; min-height:100vh;}
+  header.topbar{background:var(--green); color:#fff; padding:14px 22px; display:flex; align-items:center; justify-content:space-between; gap:14px; border-bottom:3px solid var(--green-deep);}
+  .topbar .who{font-size:13px; opacity:.95; display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .role-tag{background:rgba(255,255,255,.16); padding:2px 8px; border-radius:999px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; font-weight:600;}
+  .topbar button{background:transparent; border:1px solid rgba(255,255,255,.4); color:#fff; padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600;}
+  .topbar button:hover{background:rgba(255,255,255,.12);}
+
+  /* tabs */
+  .tabbar{background:var(--surface); border-bottom:1px solid var(--line); padding:0 14px; display:flex; gap:2px; overflow-x:auto; position:sticky; top:0; z-index:20;}
+  .tab{padding:13px 16px; font-size:13px; font-weight:600; color:var(--muted); border:none; background:none; border-bottom:3px solid transparent; white-space:nowrap; display:flex; align-items:center; gap:7px;}
+  .tab:hover{color:var(--ink);}
+  .tab.active{color:var(--green); border-bottom-color:var(--green);}
+  .tab.attention.active{color:var(--amber); border-bottom-color:var(--amber);}
+  .tab .count{font-size:11px; background:var(--green-tint); color:var(--green); border-radius:999px; padding:1px 7px; font-weight:600;}
+  .tab.attention .count{background:var(--amber-tint); color:var(--amber);}
+  .tab.private-tab::before{content:'lock'; font-family:'JetBrains Mono'; font-size:0;}
+  .lock-ico{font-size:11px; opacity:.6;}
+
+  main{max-width:1280px; margin:0 auto; padding:20px;}
+  .view-head{display:flex; align-items:flex-end; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:14px;}
+  .view-title{font-family:'Fraunces',serif; font-size:22px; font-weight:600;}
+  .view-sub{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; margin-bottom:14px;}
+  .toolbar .field{flex:0 1 150px; min-width:130px;}
+  .toolbar .field.search{flex:1 1 220px;}
+
+  .table-wrap{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); overflow:auto;}
+  table{width:100%; border-collapse:collapse; min-width:1000px;}
+  thead th{text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); font-weight:600; padding:11px 13px; border-bottom:2px solid var(--line-strong); background:#FBFAF7; white-space:nowrap;}
+  thead th.sortable{cursor:pointer; user-select:none;}
+  tbody td{padding:11px 13px; border-bottom:1px solid var(--line); vertical-align:top;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr{cursor:pointer; transition:background .12s;}
+  tbody tr:hover{background:var(--green-tint);}
+  .task-title{font-weight:500;}
+  .task-sub{font-size:12px; color:var(--muted); margin-top:2px;}
+  .ws-tag{display:inline-block; font-size:11px; font-weight:600; color:var(--green); background:var(--green-tint); border-radius:4px; padding:2px 7px; white-space:nowrap;}
+  .owner-chip{display:inline-flex; align-items:center; gap:7px; white-space:nowrap;}
+  .avatar{width:22px; height:22px; border-radius:50%; background:var(--green); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; flex:0 0 auto;}
+  .dep-chip{display:inline-block; font-size:11px; background:#EEF1EF; border:1px solid var(--line); border-radius:4px; padding:1px 6px; margin:1px 2px 1px 0; white-space:nowrap;}
+  td.date-cell{white-space:nowrap; font-family:'JetBrains Mono',monospace; font-size:12.5px;}
+  tr.overdue td.date-cell{color:var(--amber); font-weight:500;}
+  tr.overdue{box-shadow:inset 3px 0 0 var(--amber);}
+  tr.soon td.date-cell{color:#7A5C00;}
+  .pill{display:inline-block; font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px; white-space:nowrap; border:1px solid transparent;}
+  .pill.s-notstarted{background:#F0EFEA; color:#55584F; border-color:#DDDBD0;}
+  .pill.s-inprogress{background:var(--green-tint); color:var(--green); border-color:#C8DCD1;}
+  .pill.s-blocked{background:#FBEAEA; color:var(--danger); border-color:#EBC9C9;}
+  .pill.s-onhold{background:var(--amber-tint); color:var(--amber); border-color:#F0D9B8;}
+  .pill.s-done{background:var(--green); color:#fff;}
+  .pill.s-dropped{background:#F0EFEA; color:#9B9E94; text-decoration:line-through;}
+  .pill.s-other{background:#EDEDF3; color:#4C4F66; border-color:#D9D9E6;}
+  .prio{font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px; white-space:nowrap;}
+  .prio.High{background:#FBEAEA; color:var(--danger);}
+  .prio.Medium{background:var(--amber-tint); color:var(--amber);}
+  .prio.Low{background:#EEF1EF; color:var(--muted);}
+  .wait{font-size:12px; color:var(--danger);}
+  .empty{padding:48px 20px; text-align:center; color:var(--muted);}
+  .empty .big{font-family:'Fraunces',serif; font-size:18px; color:var(--ink); margin-bottom:6px;}
+
+  .overlay{position:fixed; inset:0; background:rgba(28,36,33,.45); display:none; align-items:flex-start; justify-content:center; padding:30px 16px; overflow:auto; z-index:50;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--surface); border-radius:12px; width:100%; max-width:620px; box-shadow:var(--shadow); border:1px solid var(--line);}
+  .modal-head{padding:18px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center;}
+  .modal-head h2{font-family:'Fraunces',serif; font-size:18px;}
+  .modal-body{padding:20px 22px;}
+  .modal-foot{padding:16px 22px; border-top:1px solid var(--line); display:flex; gap:10px;}
+  .modal-foot .right{display:flex; gap:8px; margin-left:auto;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px;}
+  .field{margin-bottom:14px;}
+  .meta-line{font-size:11.5px; color:var(--muted); margin-top:4px;}
+  .x-btn{background:none; border:none; font-size:20px; color:var(--muted); line-height:1;}
+  .x-btn:hover{color:var(--ink);}
+
+  .panel{position:fixed; top:0; right:-620px; width:100%; max-width:560px; height:100vh; background:var(--surface); border-left:1px solid var(--line); box-shadow:var(--shadow); transition:right .25s ease; z-index:60; display:flex; flex-direction:column;}
+  .panel.open{right:0;}
+  .panel-head{padding:18px 22px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; background:#FBFAF7;}
+  .panel-head h2{font-family:'Fraunces',serif; font-size:18px;}
+  .panel-body{padding:20px 22px; overflow-y:auto; flex:1;}
+  .panel section{margin-bottom:30px;}
+  .panel h3{font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); border-bottom:2px solid var(--line-strong); padding-bottom:7px; margin-bottom:13px;}
+  .row-list{border:1px solid var(--line); border-radius:6px; overflow:hidden; margin-bottom:12px;}
+  .row-item{display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--line); font-size:13px;}
+  .row-item:last-child{border-bottom:none;}
+  .row-item .grow{flex:1;}
+  .row-item .sub{color:var(--muted); font-size:12px;}
+  .icon-del{background:none; border:none; color:var(--muted); font-size:15px; padding:2px 6px;}
+  .icon-del:hover{color:var(--danger);}
+  .inline-form{display:flex; gap:8px; flex-wrap:wrap;}
+  .inline-form > *{flex:1 1 110px;}
+  .inline-form .btn{flex:0 0 auto;}
+  .chips{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px;}
+  .chip{display:inline-flex; align-items:center; gap:6px; background:var(--green-tint); color:var(--green); font-size:12.5px; font-weight:500; padding:4px 10px; border-radius:999px;}
+  .chip button{background:none; border:none; color:var(--green); font-size:13px; padding:0; line-height:1;}
+  .chip button:hover{color:var(--danger);}
+  .chip.priv{background:var(--amber-tint); color:var(--amber);}
+  .hint{font-size:12px; color:var(--muted); margin-top:8px;}
+
+  #toast{position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--ink); color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; transition:transform .25s; z-index:90; max-width:90vw;}
+  #toast.show{transform:translateX(-50%) translateY(0);}
+  #toast.err{background:var(--danger);}
+  #loadbar{position:fixed; top:0; left:0; height:3px; width:0; background:var(--amber); z-index:99; transition:width .3s; opacity:0;}
+  #loadbar.on{opacity:1; width:70%;}
+
+  @media (max-width:820px){
+    main{padding:14px;}
+    .table-wrap{overflow:visible; border:none; background:none; box-shadow:none;}
+    table, thead, tbody, tr, td{display:block; min-width:0;}
+    thead{display:none;}
+    tbody tr{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:10px; padding:12px 14px; box-shadow:var(--shadow);}
+    tbody tr.overdue{box-shadow:inset 3px 0 0 var(--amber), var(--shadow);}
+    tbody td{border:none; padding:3px 0;}
+    td.date-cell::before{content:'Target: '; color:var(--muted); font-size:11px; font-family:'Inter';}
+    .grid2,.grid3{grid-template-columns:1fr;}
+  }
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<div id="loadbar"></div>
+
+<div id="loginView">
+  <div class="login-card">
+    <div class="login-head"><div class="wordmark">Finequs<small>Team Tracker</small></div></div>
+    <div class="login-body">
+      <div class="field"><label for="loginUser">User name</label><input id="loginUser" autocomplete="username" placeholder="e.g. Krish"></div>
+      <div class="field"><label for="loginPin">PIN</label><input id="loginPin" class="mono" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••"></div>
+      <button class="btn" id="loginBtn" style="width:100%; justify-content:center;">Sign in</button>
+      <div class="login-err" id="loginErr"></div>
+    </div>
+  </div>
+</div>
+
+<div id="appView">
+  <header class="topbar">
+    <div class="wordmark" style="font-size:18px;">Finequs <span style="font-weight:400; opacity:.7;">· Tracker</span></div>
+    <div class="who">
+      <span id="whoName"></span>
+      <span class="role-tag" id="whoRole"></span>
+      <button id="adminBtn" style="display:none;">Admin</button>
+      <button id="refreshBtn">Refresh</button>
+      <button id="logoutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <div class="tabbar" id="tabbar"></div>
+
+  <main>
+    <div class="view-head">
+      <div>
+        <div class="view-title" id="viewTitle">Needs Attention</div>
+        <div class="view-sub" id="viewSub"></div>
+      </div>
+      <button class="btn" id="newTaskBtn">+ New task</button>
+    </div>
+
+    <div class="toolbar">
+      <div class="field search"><label for="fSearch">Search</label><input id="fSearch" placeholder="Task, sub-topic, remarks, names…"></div>
+      <div class="field"><label for="fOwner">Owner</label><select id="fOwner"><option value="">All</option></select></div>
+      <div class="field"><label for="fPriority">Priority</label><select id="fPriority"><option value="">All</option></select></div>
+      <div class="field"><label for="fStatus">Status</label><select id="fStatus"><option value="">All (open)</option></select></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th id="thWs">Workstream</th>
+            <th>Task</th>
+            <th>Owner</th>
+            <th>Priority</th>
+            <th class="sortable" id="sortDate">Target <span id="sortArrow">▲</span></th>
+            <th>Status</th>
+            <th>Dependencies</th>
+            <th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody id="taskBody"></tbody>
+      </table>
+      <div class="empty" id="emptyState" style="display:none;">
+        <div class="big">Nothing here</div>
+        <div>Add a task, or adjust the filters.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="overlay" id="taskOverlay">
+  <div class="modal">
+    <div class="modal-head"><h2 id="taskModalTitle">New task</h2><button class="x-btn" data-close="taskOverlay" aria-label="Close">×</button></div>
+    <div class="modal-body">
+      <div class="grid2">
+        <div class="field"><label for="tWs">Workstream</label><select id="tWs"></select></div>
+        <div class="field"><label for="tSubTopic">Sub-topic / module</label><input id="tSubTopic" placeholder="Free text"></div>
+      </div>
+      <div class="field"><label for="tTask">Task</label><textarea id="tTask" rows="2" placeholder="What needs to be done"></textarea></div>
+      <div class="grid3">
+        <div class="field"><label for="tOwner">Owner</label><select id="tOwner"></select></div>
+        <div class="field"><label for="tPriority">Priority</label><select id="tPriority"></select></div>
+        <div class="field"><label for="tDate">Target date</label><input id="tDate" type="date" class="mono"></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label for="tStatus">Status</label><select id="tStatus"></select></div>
+        <div class="field"><label for="tDep1">Dependency 1</label><select id="tDep1"></select></div>
+        <div class="field"><label for="tDep2">Dependency 2</label><select id="tDep2"></select></div>
+      </div>
+      <div class="field"><label for="tWaiting">Waiting on (free text)</label><input id="tWaiting" placeholder="e.g. Centific sign-off, Fibe API"></div>
+      <div class="field"><label for="tRemarks">Remarks</label><textarea id="tRemarks" rows="2"></textarea></div>
+      <div class="meta-line" id="tMeta"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn danger small" id="taskDeleteBtn" style="display:none;">Delete</button>
+      <div class="right">
+        <button class="btn secondary" data-close="taskOverlay">Cancel</button>
+        <button class="btn" id="taskSaveBtn">Save task</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="adminPanel">
+  <div class="panel-head"><h2>Administration</h2><button class="x-btn" id="adminCloseBtn" aria-label="Close">×</button></div>
+  <div class="panel-body">
+    <section>
+      <h3>Users &amp; PINs</h3>
+      <div class="row-list" id="userList"></div>
+      <div class="inline-form">
+        <input id="uName" placeholder="Name"><input id="uPin" class="mono" placeholder="PIN">
+        <select id="uRole"><option>User</option><option>Admin</option></select>
+        <button class="btn small" id="uSaveBtn">Save user</button>
+      </div>
+      <div class="hint">Saving an existing name updates that PIN or role. New users appear in Owner, Dependency and grant dropdowns automatically.</div>
+    </section>
+
+    <section>
+      <h3>Workstreams (tabs)</h3>
+      <div class="row-list" id="wsList"></div>
+      <div class="inline-form">
+        <input id="wsName" placeholder="Workstream name">
+        <select id="wsPrivate"><option value="">Shared</option></select>
+        <button class="btn small" id="wsSaveBtn">Save</button>
+      </div>
+      <div class="hint">Set a workstream private to one person to make it their personal tab — invisible to everyone else, including other admins.</div>
+    </section>
+
+    <section>
+      <h3>Visibility grants</h3>
+      <div class="row-list" id="grantList"></div>
+      <div class="inline-form">
+        <select id="gViewer"></select>
+        <select id="gType"><option value="Workstream">sees workstream</option><option value="Owner">sees person</option></select>
+        <select id="gTarget"></select>
+        <select id="gPerm"><option>View</option><option>Edit</option></select>
+        <button class="btn small" id="gAddBtn">Grant</button>
+      </div>
+      <div class="hint">“Sriram sees workstream PaaS Sales (Edit)” or “Mohan sees person Sriram (View)”. Everyone always sees their own tasks.</div>
+    </section>
+
+    <section>
+      <h3>Statuses</h3>
+      <div class="chips" id="statusChips"></div>
+      <div class="inline-form"><input id="newStatus" placeholder="Add a status"><button class="btn small secondary" id="addStatusBtn">Add</button></div>
+      <div class="hint">“Done” / “Dropped” count as closed (hidden from workstream tabs, shown in Closed, never flagged overdue).</div>
+    </section>
+
+    <section>
+      <h3>Priorities</h3>
+      <div class="chips" id="priorityChips"></div>
+      <div class="inline-form"><input id="newPriority" placeholder="Add a priority"><button class="btn small secondary" id="addPriorityBtn">Add</button></div>
+    </section>
+
+    <button class="btn" id="saveListsBtn" style="width:100%; justify-content:center;">Save statuses &amp; priorities</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxZ14JKMxPUGjgxWLD9qxl9IoXJeGlARnmZjt6dE9VqGsOiLpr4NEU9XM2FB0rLqLijFQ/exec';
+
+let session = null;
+let DATA = { tasks:[], workstreams:[], lookups:{statuses:[],priorities:[],owners:[]}, users:[], grants:[], allWorkstreams:[] };
+let editingTaskId = null, sortAsc = true;
+let activeTab = '__attention__';          // '__attention__', '__closed__', or a workstream name
+let pendingStatuses = [], pendingPriorities = [];
+const CLOSED = ['done','dropped'];
+const SOON_DAYS = 3;
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const todayStr = () => new Date().toISOString().slice(0,10);
+function addDays(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
+
+function toast(msg, isErr){ const t=$('toast'); t.textContent=msg; t.className=isErr?'err show':'show'; clearTimeout(t._h); t._h=setTimeout(()=>t.className='',3200); }
+function busy(on){ $('loadbar').className = on?'on':''; }
+
+async function api(action, payload={}){
+  if (API_URL.startsWith('PASTE_')) throw new Error('API_URL is not configured.');
+  busy(true);
+  try{
+    const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ action, user:session?.user, pin:session?.pin, ...payload }) });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'Request failed.');
+    return data;
+  } finally { busy(false); }
+}
+
+function saveSession(){ sessionStorage.setItem('fq_session', JSON.stringify(session)); }
+function loadSession(){ try{ session = JSON.parse(sessionStorage.getItem('fq_session')); }catch(e){ session=null; } }
+function signOut(){ session=null; sessionStorage.removeItem('fq_session'); $('appView').style.display='none'; $('loginView').style.display='flex'; $('loginPin').value=''; }
+
+async function doLogin(){
+  const user=$('loginUser').value.trim(), pin=$('loginPin').value.trim();
+  $('loginErr').textContent='';
+  if(!user||!pin){ $('loginErr').textContent='Enter your user name and PIN.'; return; }
+  $('loginBtn').disabled=true;
+  try{ session={user,pin}; const r=await api('login'); session.name=r.name; session.role=r.role; saveSession(); enterApp(); }
+  catch(err){ session=null; $('loginErr').textContent=err.message; }
+  finally{ $('loginBtn').disabled=false; }
+}
+
+async function enterApp(){
+  $('loginView').style.display='none'; $('appView').style.display='block';
+  $('whoName').textContent=session.name; $('whoRole').textContent=session.role;
+  $('adminBtn').style.display=session.role==='Admin'?'':'none';
+  await refresh();
+}
+
+async function refresh(){
+  try{
+    const r = await api('getData');
+    DATA.tasks=r.tasks||[]; DATA.workstreams=r.workstreams||[]; DATA.lookups=r.lookups||DATA.lookups;
+    DATA.users=r.users||[]; DATA.grants=r.grants||[]; DATA.allWorkstreams=r.allWorkstreams||[];
+    // keep active tab valid
+    const wsNames = DATA.workstreams.map(w=>w.name);
+    if(activeTab!=='__attention__' && activeTab!=='__closed__' && !wsNames.includes(activeTab)) activeTab='__attention__';
+    renderTabs(); fillFilters(); renderView();
+    if(session.role==='Admin') renderAdmin();
+  }catch(err){ toast(err.message,true); if(/Invalid user/i.test(err.message)) signOut(); }
+}
+
+function fillSelect(sel, values, keep, first){
+  const cur = keep ? sel.value : '';
+  sel.innerHTML='';
+  if(first!==undefined){ const o=document.createElement('option'); o.value=''; o.textContent=first; sel.appendChild(o); }
+  values.forEach(v=>{ const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+  if(keep && cur && values.includes(cur)) sel.value=cur;
+}
+
+function isClosed(s){ return CLOSED.includes(String(s).toLowerCase()); }
+function isOverdue(t){ if(!t.targetDate||isClosed(t.status)) return false; return t.targetDate < todayStr(); }
+function isSoon(t){ if(!t.targetDate||isClosed(t.status)) return false; return t.targetDate>=todayStr() && t.targetDate<=addDays(SOON_DAYS); }
+
+/* ---------- tabs ---------- */
+function renderTabs(){
+  const bar=$('tabbar'); bar.innerHTML='';
+  const attnCount = DATA.tasks.filter(t=>isOverdue(t)||isSoon(t)).length;
+  bar.appendChild(makeTab('__attention__','Needs Attention', attnCount, true, false));
+  DATA.workstreams.forEach(w=>{
+    const open = DATA.tasks.filter(t=>t.workstream===w.name && !isClosed(t.status)).length;
+    bar.appendChild(makeTab(w.name, w.name, open, false, !!w.privateTo));
+  });
+  const closedCount = DATA.tasks.filter(t=>isClosed(t.status)).length;
+  bar.appendChild(makeTab('__closed__','Closed', closedCount, false, false));
+}
+function makeTab(key,label,count,attention,priv){
+  const b=document.createElement('button');
+  b.className='tab'+(attention?' attention':'')+(priv?' private-tab':'')+(activeTab===key?' active':'');
+  b.innerHTML=(priv?'<span class="lock-ico">🔒</span>':'')+esc(label)+(count?` <span class="count">${count}</span>`:'');
+  b.addEventListener('click',()=>{ activeTab=key; renderTabs(); renderView(); });
+  return b;
+}
+
+/* ---------- filters + view ---------- */
+function fillFilters(){
+  const owners=[...new Set(DATA.tasks.map(t=>t.owner))].sort();
+  fillSelect($('fOwner'), owners, true, 'All');
+  fillSelect($('fPriority'), DATA.lookups.priorities, true, 'All');
+  fillSelect($('fStatus'), DATA.lookups.statuses, true, 'All (open)');
+}
+
+function baseRowsForTab(){
+  if(activeTab==='__attention__') return DATA.tasks.filter(t=>isOverdue(t)||isSoon(t));
+  if(activeTab==='__closed__')    return DATA.tasks.filter(t=>isClosed(t.status));
+  return DATA.tasks.filter(t=>t.workstream===activeTab);
+}
+
+function visibleRows(){
+  const q=$('fSearch').value.trim().toLowerCase(), fo=$('fOwner').value, fp=$('fPriority').value, fs=$('fStatus').value;
+  const onClosedTab = activeTab==='__closed__';
+  let rows = baseRowsForTab().filter(t=>{
+    if(fo && t.owner!==fo) return false;
+    if(fp && t.priority!==fp) return false;
+    if(fs){ if(t.status!==fs) return false; }
+    else if(!onClosedTab && activeTab!=='__attention__' && isClosed(t.status)) return false; // workstream tabs hide closed by default
+    if(q){ const hay=(t.task+' '+t.subTopic+' '+t.remarks+' '+t.workstream+' '+t.waitingOn+' '+t.dependency1+' '+t.dependency2+' '+t.owner).toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+  rows.sort((a,b)=>{ const da=a.targetDate||'9999-12-31', db=b.targetDate||'9999-12-31'; return sortAsc?da.localeCompare(db):db.localeCompare(da); });
+  return rows;
+}
+
+function renderView(){
+  // header
+  const titles={ '__attention__':'Needs Attention', '__closed__':'Closed' };
+  $('viewTitle').textContent = titles[activeTab] || activeTab;
+  const subs={
+    '__attention__':'Overdue and due within 3 days, across every workstream you can see. Items stay in their own tab.',
+    '__closed__':'Everything marked Done or Dropped. Nothing is deleted — this is your running archive.'
+  };
+  $('viewSub').textContent = subs[activeTab] || 'Open items in this workstream, sorted by target date.';
+  // show workstream column only on roll-up tabs
+  const showWs = (activeTab==='__attention__'||activeTab==='__closed__');
+  $('thWs').style.display = showWs?'':'none';
+
+  const rows=visibleRows();
+  const tb=$('taskBody'); tb.innerHTML='';
+  $('emptyState').style.display=rows.length?'none':'block';
+
+  const scope = baseRowsForTab();
+  const over = scope.filter(isOverdue).length, soon = scope.filter(isSoon).length;
+  $('viewSub').textContent += `  ·  ${rows.length} shown` + (activeTab==='__attention__'?` · ${over} overdue · ${soon} due soon`:'');
+
+  rows.forEach(t=>{
+    const tr=document.createElement('tr');
+    if(isOverdue(t)) tr.classList.add('overdue'); else if(isSoon(t)) tr.classList.add('soon');
+    const deps=[t.dependency1,t.dependency2].filter(Boolean).map(d=>`<span class="dep-chip">${esc(d)}</span>`).join('');
+    const wait=t.waitingOn?`<div class="wait">⏳ ${esc(t.waitingOn)}</div>`:'';
+    tr.innerHTML =
+      (showWs?`<td>${t.workstream?'<span class="ws-tag">'+esc(t.workstream)+'</span>':''}</td>`:'') +
+      `<td style="max-width:300px;"><div class="task-title">${esc(t.task)}</div>`+(t.subTopic?`<div class="task-sub">${esc(t.subTopic)}</div>`:'')+(t.canEdit?'':'<div class="task-sub">view only</div>')+`</td>` +
+      `<td><span class="owner-chip"><span class="avatar">${esc(initials(t.owner))}</span>${esc(t.owner)}</span></td>` +
+      `<td>${t.priority?`<span class="prio ${esc(t.priority)}">${esc(t.priority)}</span>`:''}</td>` +
+      `<td class="date-cell">${esc(t.targetDate||'—')}</td>` +
+      `<td><span class="pill ${pillClass(t.status)}">${esc(t.status||'—')}</span></td>` +
+      `<td style="max-width:180px;">${deps||'<span class="task-sub">—</span>'}${wait}</td>` +
+      `<td style="max-width:220px;"><span class="task-sub">${esc(t.remarks)}</span></td>`;
+    tr.addEventListener('click',()=>openTaskModal(t.taskId));
+    tb.appendChild(tr);
+  });
+}
+
+function pillClass(s){ const k=String(s).toLowerCase().replace(/[^a-z]/g,''); return ['notstarted','inprogress','blocked','onhold','done','dropped'].includes(k)?'s-'+k:'s-other'; }
+function initials(n){ return String(n).split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+/* ---------- task modal ---------- */
+function openTaskModal(taskId){
+  editingTaskId = taskId||null;
+  const t = taskId ? DATA.tasks.find(x=>x.taskId===taskId) : null;
+  const canEdit = t ? t.canEdit : true;
+  const isAdmin = session.role==='Admin';
+
+  const wsNames = DATA.workstreams.map(w=>w.name);
+  fillSelect($('tWs'), wsNames);
+  fillSelect($('tStatus'), DATA.lookups.statuses);
+  fillSelect($('tPriority'), DATA.lookups.priorities);
+  fillSelect($('tOwner'), DATA.lookups.owners);
+  fillSelect($('tDep1'), DATA.lookups.owners, false, '— none —');
+  fillSelect($('tDep2'), DATA.lookups.owners, false, '— none —');
+
+  $('taskModalTitle').textContent = t ? (canEdit?'Edit task':'Task (view only)') : 'New task';
+  const defaultWs = (activeTab!=='__attention__'&&activeTab!=='__closed__') ? activeTab : (wsNames[0]||'');
+  $('tWs').value      = t ? t.workstream : defaultWs;
+  $('tSubTopic').value= t ? t.subTopic : '';
+  $('tTask').value    = t ? t.task : '';
+  $('tOwner').value   = t ? t.owner : session.name;
+  $('tPriority').value= t ? t.priority : 'Medium';
+  $('tDate').value    = t ? t.targetDate : '';
+  $('tStatus').value  = t ? t.status : (DATA.lookups.statuses[0]||'');
+  $('tDep1').value    = t ? t.dependency1 : '';
+  $('tDep2').value    = t ? t.dependency2 : '';
+  $('tWaiting').value = t ? t.waitingOn : '';
+  $('tRemarks').value = t ? t.remarks : '';
+  $('tMeta').textContent = t ? `Created by ${t.createdBy} on ${t.createdAt} · last updated by ${t.updatedBy} on ${t.updatedAt}` : '';
+
+  $('tOwner').disabled = !isAdmin;
+  ['tWs','tSubTopic','tTask','tPriority','tDate','tStatus','tDep1','tDep2','tWaiting','tRemarks'].forEach(id=>$(id).disabled=!canEdit);
+  $('taskSaveBtn').style.display = canEdit?'':'none';
+  $('taskDeleteBtn').style.display = (t&&isAdmin)?'':'none';
+  $('taskOverlay').classList.add('open');
+}
+
+async function saveTask(){
+  const p={ workstream:$('tWs').value, subTopic:$('tSubTopic').value.trim(), task:$('tTask').value.trim(),
+    owner:$('tOwner').value, priority:$('tPriority').value, targetDate:$('tDate').value, status:$('tStatus').value,
+    dependency1:$('tDep1').value, dependency2:$('tDep2').value, waitingOn:$('tWaiting').value.trim(), remarks:$('tRemarks').value.trim() };
+  if(!p.task){ toast('Task description is required.',true); return; }
+  $('taskSaveBtn').disabled=true;
+  try{
+    if(editingTaskId) await api('updateTask',{taskId:editingTaskId, task:p});
+    else await api('addTask',{task:p});
+    $('taskOverlay').classList.remove('open');
+    toast(editingTaskId?'Task updated':'Task added');
+    await refresh();
+  }catch(err){ toast(err.message,true); }
+  finally{ $('taskSaveBtn').disabled=false; }
+}
+
+async function deleteTask(){
+  if(!editingTaskId) return;
+  if(!confirm('Delete this task permanently?')) return;
+  try{ await api('deleteTask',{taskId:editingTaskId}); $('taskOverlay').classList.remove('open'); toast('Task deleted'); await refresh(); }
+  catch(err){ toast(err.message,true); }
+}
+
+/* ---------- admin ---------- */
+function renderAdmin(){
+  const names = DATA.users.map(u=>u.name);
+
+  const ul=$('userList'); ul.innerHTML='';
+  DATA.users.forEach(u=>{
+    const d=document.createElement('div'); d.className='row-item';
+    d.innerHTML=`<span class="grow"><strong>${esc(u.name)}</strong> <span class="sub">· ${esc(u.role)} · PIN <span class="mono">${esc(u.pin)}</span></span></span>`;
+    const del=document.createElement('button'); del.className='icon-del'; del.textContent='✕'; del.title='Remove user';
+    del.addEventListener('click',async()=>{ if(!confirm(`Remove ${u.name}? Their tasks stay in the sheet.`)) return; try{ await api('deleteUser',{name:u.name}); toast('User removed'); await refresh(); }catch(err){ toast(err.message,true); } });
+    d.appendChild(del); ul.appendChild(d);
+  });
+
+  const wl=$('wsList'); wl.innerHTML='';
+  DATA.allWorkstreams.forEach(w=>{
+    const d=document.createElement('div'); d.className='row-item';
+    const priv = w.privateTo ? ` <span class="sub">· 🔒 private to ${esc(w.privateTo)}</span>` : ' <span class="sub">· shared</span>';
+    d.innerHTML=`<span class="grow"><strong>${esc(w.name)}</strong>${priv}</span>`;
+    const del=document.createElement('button'); del.className='icon-del'; del.textContent='✕'; del.title='Remove workstream';
+    del.addEventListener('click',async()=>{ try{ await api('deleteWorkstream',{name:w.name}); toast('Workstream removed'); await refresh(); }catch(err){ toast(err.message,true); } });
+    d.appendChild(del); wl.appendChild(d);
+  });
+  fillSelect($('wsPrivate'), names, true, 'Shared');
+
+  const gl=$('grantList'); gl.innerHTML='';
+  if(!DATA.grants.length) gl.innerHTML='<div class="row-item"><span class="sub">No grants yet — everyone sees only their own tasks.</span></div>';
+  DATA.grants.forEach(g=>{
+    const d=document.createElement('div'); d.className='row-item';
+    const verb = g.type==='Workstream'?'sees workstream':'sees person';
+    d.innerHTML=`<span class="grow">${esc(g.viewer)} <span class="sub">${verb}</span> ${esc(g.target)} <span class="sub">· ${esc(g.permission)}</span></span>`;
+    const del=document.createElement('button'); del.className='icon-del'; del.textContent='✕'; del.title='Remove grant';
+    del.addEventListener('click',async()=>{ try{ await api('deleteGrant',{grant:{viewer:g.viewer,type:g.type,target:g.target}}); toast('Grant removed'); await refresh(); }catch(err){ toast(err.message,true); } });
+    d.appendChild(del); gl.appendChild(d);
+  });
+  fillSelect($('gViewer'), names, true);
+  refreshGrantTarget();
+
+  pendingStatuses=[...DATA.lookups.statuses]; pendingPriorities=[...DATA.lookups.priorities];
+  renderChips();
+}
+
+function refreshGrantTarget(){
+  const type=$('gType').value;
+  if(type==='Workstream') fillSelect($('gTarget'), DATA.allWorkstreams.filter(w=>!w.privateTo).map(w=>w.name), false);
+  else fillSelect($('gTarget'), DATA.users.map(u=>u.name), false);
+}
+
+function renderChips(){
+  const mk=(arr,elId)=>{ const wrap=$(elId); wrap.innerHTML='';
+    arr.forEach((v,i)=>{ const c=document.createElement('span'); c.className='chip'; c.innerHTML=esc(v)+' ';
+      const b=document.createElement('button'); b.textContent='✕'; b.title='Remove';
+      b.addEventListener('click',()=>{ arr.splice(i,1); renderChips(); }); c.appendChild(b); wrap.appendChild(c); }); };
+  mk(pendingStatuses,'statusChips'); mk(pendingPriorities,'priorityChips');
+}
+
+async function saveLists(){
+  if(!pendingStatuses.length||!pendingPriorities.length){ toast('Keep at least one status and one priority.',true); return; }
+  try{ await api('saveLookups',{statuses:pendingStatuses, priorities:pendingPriorities}); toast('Saved'); await refresh(); }
+  catch(err){ toast(err.message,true); }
+}
+
+/* ---------- wiring ---------- */
+document.addEventListener('DOMContentLoaded',()=>{
+  $('loginBtn').addEventListener('click',doLogin);
+  $('loginPin').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+  $('loginUser').addEventListener('keydown',e=>{ if(e.key==='Enter') $('loginPin').focus(); });
+  $('logoutBtn').addEventListener('click',signOut);
+  $('refreshBtn').addEventListener('click',refresh);
+  $('newTaskBtn').addEventListener('click',()=>openTaskModal(null));
+  $('taskSaveBtn').addEventListener('click',saveTask);
+  $('taskDeleteBtn').addEventListener('click',deleteTask);
+
+  ['fSearch','fOwner','fPriority','fStatus'].forEach(id=>$(id).addEventListener('input',renderView));
+  $('sortDate').addEventListener('click',()=>{ sortAsc=!sortAsc; $('sortArrow').textContent=sortAsc?'▲':'▼'; renderView(); });
+
+  document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>$(b.dataset.close).classList.remove('open')));
+  $('taskOverlay').addEventListener('click',e=>{ if(e.target===$('taskOverlay')) $('taskOverlay').classList.remove('open'); });
+
+  $('adminBtn').addEventListener('click',()=>$('adminPanel').classList.add('open'));
+  $('adminCloseBtn').addEventListener('click',()=>$('adminPanel').classList.remove('open'));
+
+  $('uSaveBtn').addEventListener('click',async()=>{
+    const name=$('uName').value.trim(), pin=$('uPin').value.trim(), role=$('uRole').value;
+    if(!name||!pin){ toast('Name and PIN are required.',true); return; }
+    try{ await api('saveUser',{target:{name,pin,role}}); $('uName').value=''; $('uPin').value=''; toast('User saved'); await refresh(); }catch(err){ toast(err.message,true); }
+  });
+
+  $('wsSaveBtn').addEventListener('click',async()=>{
+    const name=$('wsName').value.trim(), privateTo=$('wsPrivate').value;
+    if(!name){ toast('Workstream name required.',true); return; }
+    try{ await api('saveWorkstream',{ws:{name,privateTo}}); $('wsName').value=''; toast('Workstream saved'); await refresh(); }catch(err){ toast(err.message,true); }
+  });
+
+  $('gType').addEventListener('change',refreshGrantTarget);
+  $('gAddBtn').addEventListener('click',async()=>{
+    try{ await api('addGrant',{grant:{viewer:$('gViewer').value, type:$('gType').value, target:$('gTarget').value, permission:$('gPerm').value}}); toast('Grant added'); await refresh(); }catch(err){ toast(err.message,true); }
+  });
+
+  const addChip=(inputId,arr)=>{ const v=$(inputId).value.trim(); if(!v) return; if(!arr.some(x=>x.toLowerCase()===v.toLowerCase())) arr.push(v); $(inputId).value=''; renderChips(); };
+  $('addStatusBtn').addEventListener('click',()=>addChip('newStatus',pendingStatuses));
+  $('newStatus').addEventListener('keydown',e=>{ if(e.key==='Enter') addChip('newStatus',pendingStatuses); });
+  $('addPriorityBtn').addEventListener('click',()=>addChip('newPriority',pendingPriorities));
+  $('newPriority').addEventListener('keydown',e=>{ if(e.key==='Enter') addChip('newPriority',pendingPriorities); });
+  $('saveListsBtn').addEventListener('click',saveLists);
+
+  loadSession();
+  if(session && session.user && session.pin) enterApp();
+});
+</script>
+</body>
+</html>
